@@ -24,6 +24,12 @@
 
 using namespace std;
 
+void copy(unsigned char a[], unsigned char b[], int size){  //b values into a
+	for(int i=0;i<size;i++){
+		a[i] = b[i]; //copy over
+	}
+}
+
 void xorb(unsigned char m[], unsigned char c[]){
 	for(int i=0;i<KSIZE;i++){
 		m[i] = m[i] xor c[i]; //xor each element and apply to m
@@ -72,16 +78,14 @@ void num2uchararray(long unsigned int v, unsigned char a[8]){
 	revuchararr(a);
 }
 
-int encryptCNT(unsigned char in[], unsigned char out[],
-	unsigned char key[]){ //may take a key later
-	int rfd,wfd;
-	//unsigned char key[KSIZE]; //symmetric key
-	unsigned char nonce[CSIZE]; //nonce vector
+//may take a key later
+int encrypt(unsigned char in[], unsigned char out[],
+	unsigned char key[], unsigned char nonce[], long unsigned int start)
+{
 	unsigned char counter[CSIZE]; //holds the counter in byte form
 	unsigned char buff[KSIZE]; //buffer that holds nonce and counter
-	long unsigned int c = 0; //raw count to be iterated
+	long unsigned int c = start; //raw count to be iterated
 
-	//generate_key(key,nonce); //get random key and nonce vector
 	memset(counter,0,CSIZE); //zero counter
 	memset(buff,0,KSIZE); //zero counter
 	bcopy(nonce,buff,CSIZE); //put nonce in first half of buff
@@ -94,162 +98,92 @@ int encryptCNT(unsigned char in[], unsigned char out[],
 	int r;
 	unsigned char block[KSIZE];
 	unsigned char oblock[KSIZE];
-	//int jj = 1;
+
 	r = 0;
-	while(in[r] != 0){ //more letters to read
+	while(in[r] != 0 && r<ILIM-1){ //more letters to read
 		memset(block,0,KSIZE); //zero block
 		block[0] = in[r]; //read one byte (should be in position 0
-/*
-		printf("|buff||nonce||counter|\n");
-		for(int aa=0;aa<KSIZE;aa++){
-			printf("|%03u|",buff[aa]);
-			if(aa<CSIZE){
-				printf("|%03u||%03u|\n",nonce[aa],counter[aa]);
-			}else{
-				printf("\n");
-			}
-		}
-*/
-/*
-		if(jj == 1){
-			printf("plaintext:\n");
-			for(int k=0;k<KSIZE;k++){
-				printf("|%03u|",block[k]);
-			}
-			printf("\n\n");
-		}
-*/
+
 		AES_encrypt(buff,oblock,&AESkey); //encrypt buff
 		xorb(block,oblock); //xor message with encrypted buff
-/*
-		if(jj == 1){
-			printf("ciphertext:\n");
-			for(int k=0;k<KSIZE;k++){
-				printf("|%03u|",block[k]);
-			}
-			printf("\n\n");
-			//jj = 0;
-		}
-*/
-		write(wfd,block,KSIZE);
+
+		copy((out+KSIZE*r),block,KSIZE); //copy block into encrypt array
 		memset(oblock,0,KSIZE); //zero oblock
 		memset(counter,0,CSIZE); //zero counter
 		c++; //increment c to get new buff value
 		num2uchararray(c,counter); //convert c into byte array
 		bcopy(counter,(buff+CSIZE),CSIZE); //put counter in second half of buff
+		r++; //increment r
 	}
-
-	close(rfd);
-	close(wfd);
-	if ((wfd = open("key", O_WRONLY|O_CREAT,S_IRWXU|S_IRWXG|S_IRWXO)) == -1){
-		perror ("open error for output file");
-	}
-	write(wfd,key,KSIZE); //write key to file
-	close(wfd);
-	if ((wfd = open("nonce", O_WRONLY|O_CREAT,S_IRWXU|S_IRWXG|S_IRWXO)) == -1){
-		perror ("open error for output file");
-	}
-	write(wfd,nonce,KSIZE); //write nonce to file
-	close(wfd);
-
-	return 0;
+	
+	return r; //the size of the message
 }
 
-int decryptCNT(char *ifile, char *ofile, char *keyfile, char *noncefile)
+int decrypt(unsigned char in[], unsigned char out[],
+	unsigned char key[], unsigned char nonce[],
+	long unsigned int start, long unsigned int len)
 {
-	int rfd,wfd,kfd,nfd;
-	if((kfd = open(keyfile,O_RDONLY)) == -1){
-		perror("open error for key file");
-	}
-	unsigned char key[KSIZE]; //key for decryption
-	read(kfd,key,KSIZE); //read in key
-	AES_KEY AESkey;
-	AES_set_encrypt_key((const unsigned char *)key,BLOCK, &AESkey);
-
-	if((nfd = open(noncefile,O_RDONLY)) == -1){
-		perror("open error for nonce file");
-	}
-	unsigned char nonce[CSIZE]; //initialization vector
-	read(nfd,nonce,CSIZE); //read in nonce
-	if ((rfd = open(ifile, O_RDONLY)) == -1){
-		perror ("open error for input file");
-	}
-	if ((wfd = open(ofile, O_WRONLY|O_CREAT,S_IRWXU|S_IRWXG|S_IRWXO)) == -1){
-		perror ("open error for output file");
-	}
-
-	int r;
-	unsigned char block[KSIZE];
-	unsigned char oblock[KSIZE]; //block to be written to a file
-	unsigned char counter[CSIZE]; //holds the current count value of c
-	unsigned char buff[KSIZE]; //buffer to hold nonse and counter
-	long unsigned int d = 0; //starting count
+	unsigned char counter[CSIZE]; //holds the counter in byte form
+	unsigned char buff[KSIZE]; //buffer that holds nonce and counter
+	long unsigned int c = start; //raw count to be iterated
 
 	memset(counter,0,CSIZE); //zero counter
 	memset(buff,0,KSIZE); //zero counter
 	bcopy(nonce,buff,CSIZE); //put nonce in first half of buff
+	num2uchararray(c,counter); //convert c into byte array
+	bcopy(counter,(buff+CSIZE),CSIZE); //put counter in second half of buff
 
-	//int jj = 1;
-	r = -1;
-	while(r != 0){
-		memset(block,0,KSIZE);
-		r = read(rfd,block,KSIZE); //read 16 bytes
-		num2uchararray(d,counter); //convert c into byte array
+	AES_KEY AESkey;
+	AES_set_encrypt_key((const unsigned char *)key,BLOCK, &AESkey);
+
+	unsigned int r;
+	unsigned char block[KSIZE];
+	unsigned char oblock[KSIZE];
+
+	r = 0;
+	while(r < len && r<ILIM-1 ){ //more letters to read
+		AES_encrypt(buff,oblock,&AESkey); //encrypt buff
+		memset(block,0,KSIZE); //zero block
+		copy(block,(out+KSIZE*r),KSIZE); //copy cipher chunk into block
+		xorb(block,oblock); //xor message with encrypted buff
+
+		in[r] = block[0]; //read one byte (should be in position 0)
+//		copy((out+KSIZE*r),block,KSIZE); //copy block into encrypt array
+		memset(oblock,0,KSIZE); //zero oblock
+		memset(counter,0,CSIZE); //zero counter
+		c++; //increment c to get new buff value
+		num2uchararray(c,counter); //convert c into byte array
 		bcopy(counter,(buff+CSIZE),CSIZE); //put counter in second half of buff
-		//printf("%d\n",r);
-		if(r == -1){
-			printf("error:%s\n",strerror(errno));
-		}else{
-			if(r != 0){ //valid 16-bytes to process
-/*
-				if(jj == 1){
-					printf("plaintext:\n");
-					for(int k=0;k<KSIZE;k++){
-						printf("|%03u|",block[k]);
-					}
-					printf("\n\n");
-				}
-*/
-				AES_encrypt(buff,oblock,&AESkey); //encrypt buff
-				xorb(block,oblock); //cipher xor encrypted buff
-/*
-				if(jj == 1){
-					printf("ciphertext:\n");
-					for(int k=0;k<KSIZE;k++){
-						printf("|%03u|",block[k]);
-					}
-					printf("\n\n");
-					//jj = 0;
-				}
-*/
-				write(wfd,block,1); //write 1st byte of block to file
-				memset(oblock,0,KSIZE); //zero oblock
-				memset(counter,0,CSIZE); //zero counter
-				d++; //increment c to get new buff value
-			}
-		}
+		r++; //increment r
 	}
 
-	close(rfd);
-	close(wfd);
-	close(kfd);
-	close(nfd);
-	return 0;
+	in[r] = 0; //null terminate the message	
+	
+	return r; //the size of the message
 }
 
 int main(int argc, char *argv[]){
-	if(argc == 4){
-		if(!strcmp("1",argv[3])){
-			encryptCNT(argv[1],argv[2]);
-		}
-	}else if(argc == 6){
-		if(!strcmp("1",argv[5])){
-			decryptCNT(argv[1],argv[2],argv[3],argv[4]);
-		}
-	}else{
-		printf("incorrect number of arguments\n");
-		return 1;
-	}
+	unsigned char key[KSIZE];
+	unsigned char nonce[CSIZE];
+	unsigned char plain[ILIM]; //plaintext container
+	unsigned char cipher[OLIM]; //ciphertext container
 
+	memset(key,0,KSIZE);
+	memset(nonce,0,CSIZE);
+	memset(plain,0,ILIM);
+	memset(cipher,0,OLIM);
+	generate_key(key,nonce);
+	
+	strncpy((char *)plain,"Stronger than Hi? I think not ;)",ILIM-1);
+	printf("%s\n",plain);
+	int end = encrypt(plain,cipher,key,nonce,0);
+	int j = end * KSIZE;
+	for(int i=0;i<j;i++){
+		printf("|%03u|",cipher[i]);
+	}
+	printf("\n");
+	memset(plain,0,ILIM);
+	end = decrypt(plain,cipher,key,nonce,0,end);
+	printf("%s\n",plain);
 	return 0;
 }
