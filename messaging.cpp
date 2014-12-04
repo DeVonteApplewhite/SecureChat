@@ -15,28 +15,32 @@
 #include <errno.h>
 #include <openssl/aes.h>
 #include <iostream>
-
-#define BLOCK 128
-#define KSIZE 16
-#define CSIZE 8
-#define ILIM 256
-#define OLIM 4096
+#include "messaging.h"
 
 using namespace std;
 
-void copy(unsigned char a[], unsigned char b[], int size){  //b values into a
+Messaging::Messaging(){
+	count = 0; //init count
+	memset(key,0,KSIZE); //zero key
+	memset(nonce,0,CSIZE); //zero nonce
+	for(int i=0;i<CSIZE;i++){
+		nonce[i] = 255u-i; //initialize nonce
+	}
+}
+
+void Messaging::copy(unsigned char a[], unsigned char b[], int size){  //b values into a
 	for(int i=0;i<size;i++){
 		a[i] = b[i]; //copy over
 	}
 }
 
-void xorb(unsigned char m[], unsigned char c[]){
+void Messaging::xorb(unsigned char m[], unsigned char c[]){
 	for(int i=0;i<KSIZE;i++){
 		m[i] = m[i] xor c[i]; //xor each element and apply to m
 	}
 }
 
-int generate_key(unsigned char key[], unsigned char nonce[]){
+int Messaging::generate_key(){
 	int fd;
 
 	if ((fd = open("/dev/random", O_RDONLY)) == -1){
@@ -52,14 +56,14 @@ int generate_key(unsigned char key[], unsigned char nonce[]){
 	return 0;
 }
 
-void create_key(unsigned char key[], unsigned int keyval){
+void Messaging::create_key(unsigned int keyval){
 		srand(keyval); //seed randomizer with common start
 		for(int i=0;i<KSIZE;i++){
 			key[i] = rand()%256; //random byte
 		}
 }
 
-void revuchararr(unsigned char a[8]){
+void Messaging::revuchararr(unsigned char a[8]){
 	if(a != NULL){
 		int low = 0;
 		int high = 7;
@@ -73,7 +77,7 @@ void revuchararr(unsigned char a[8]){
 	}
 }
 
-void num2uchararray(long unsigned int v, unsigned char a[8]){
+void Messaging::num2uchararray(long unsigned int v, unsigned char a[8]){
 	int x = v;
 	int it = 0;
 	while(x>0 && it<8){
@@ -86,17 +90,17 @@ void num2uchararray(long unsigned int v, unsigned char a[8]){
 }
 
 //may take a key later
-int encrypt(unsigned char in[], unsigned char out[],
-	unsigned char key[], unsigned char nonce[], long unsigned int start)
-{
+struct enc_info Messaging::encrypt(unsigned char in[], unsigned char out[]){
+	struct enc_info retval;
+	retval.start = count; //decryption knows where to start now
+
 	unsigned char counter[CSIZE]; //holds the counter in byte form
 	unsigned char buff[KSIZE]; //buffer that holds nonce and counter
-	long unsigned int c = start; //raw count to be iterated
 
 	memset(counter,0,CSIZE); //zero counter
 	memset(buff,0,KSIZE); //zero counter
 	bcopy(nonce,buff,CSIZE); //put nonce in first half of buff
-	num2uchararray(c,counter); //convert c into byte array
+	num2uchararray(count,counter); //convert c into byte array
 	bcopy(counter,(buff+CSIZE),CSIZE); //put counter in second half of buff
 
 	AES_KEY AESkey;
@@ -117,17 +121,16 @@ int encrypt(unsigned char in[], unsigned char out[],
 		copy((out+KSIZE*r),block,KSIZE); //copy block into encrypt array
 		memset(oblock,0,KSIZE); //zero oblock
 		memset(counter,0,CSIZE); //zero counter
-		c++; //increment c to get new buff value
-		num2uchararray(c,counter); //convert c into byte array
+		count++; //increment c to get new buff value
+		num2uchararray(count,counter); //convert c into byte array
 		bcopy(counter,(buff+CSIZE),CSIZE); //put counter in second half of buff
 		r++; //increment r
 	}
-	
-	return r; //the size of the message
+	retval.len = r;
+	return retval; //the encryption info
 }
 
-int decrypt(unsigned char in[], unsigned char out[],
-	unsigned char key[], unsigned char nonce[],
+int Messaging::decrypt(unsigned char in[], unsigned char out[],
 	long unsigned int start, long unsigned int len)
 {
 	unsigned char counter[CSIZE]; //holds the counter in byte form
@@ -169,28 +172,12 @@ int decrypt(unsigned char in[], unsigned char out[],
 	return r; //the size of the message
 }
 
-int main(int argc, char *argv[]){
-	unsigned char key[KSIZE];
-	unsigned char nonce[CSIZE];
-	unsigned char plain[ILIM]; //plaintext container
-	unsigned char cipher[OLIM]; //ciphertext container
+Messaging::~Messaging(){
 
-	memset(key,0,KSIZE);
-	memset(nonce,0,CSIZE);
-	memset(plain,0,ILIM);
-	memset(cipher,0,OLIM);
-	generate_key(key,nonce);
-	
-	strncpy((char *)plain,"Stronger than Hi? I think not ;)",ILIM-1);
-	printf("%s\n",plain);
-	int end = encrypt(plain,cipher,key,nonce,0);
-	int j = end * KSIZE;
-	for(int i=0;i<j;i++){
-		printf("|%03u|",cipher[i]);
-	}
-	printf("\n");
-	memset(plain,0,ILIM);
-	end = decrypt(plain,cipher,key,nonce,0,end);
-	printf("%s\n",plain);
+}
+/*
+int _dmain(int argc, char *argv[]){
+
 	return 0;
 }
+*/
