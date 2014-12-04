@@ -52,6 +52,13 @@ int generate_key(unsigned char key[], unsigned char nonce[]){
 	return 0;
 }
 
+void create_key(unsigned char key[], unsigned int keyval){
+		srand(keyval); //seed randomizer with common start
+		for(int i=0;i<KSIZE;i++){
+			key[i] = rand()%256; //random byte
+		}
+}
+
 void revuchararr(unsigned char a[8]){
 	if(a != NULL){
 		int low = 0;
