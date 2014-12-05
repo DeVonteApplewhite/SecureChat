@@ -16,6 +16,5 @@ Contains the following four cryptographic primitives:
   * Provide for forgeability of transcripts, repudiation of contents,
     and plausible deniability.
 
-To compile the project, run the following command:
-make -f makefile
-This should produce a main executable.
+To compile the project type "make" into the terminal. An executable
+named "main" will be generated.
