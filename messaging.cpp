@@ -56,10 +56,9 @@ int Messaging::generate_key(){
 }
 
 //create key using seed value
-void Messaging::create_key(unsigned int keyval){
-		srand(keyval); //seed randomizer with common start
+void Messaging::create_key(unsigned char hashkey[]){
 		for(int i=0;i<KSIZE;i++){
-			key[i] = rand()%256; //random byte
+			key[i] = hashkey[i]; //random byte
 		}
 }
 
@@ -105,6 +104,13 @@ uint128 Messaging::uchararray2num(unsigned char a[16]){
 		ans += adjbase * a[i]; //update answer based on a[i]'s value
 	}
 	return ans;
+}
+
+void Messaging::printkey(){
+	for(int i=0;i<KSIZE;i++){
+		printf("|%03u|",key[i]);
+	}
+	printf("\n");
 }
 
 //encrypt message and send back message length and counter start value

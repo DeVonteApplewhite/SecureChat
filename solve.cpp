@@ -13,6 +13,7 @@
 #include <string.h>
 #include <openssl/sha.h>
 #include <cstdlib>
+#include "messaging.h"
 
 using namespace std;
 
@@ -20,6 +21,8 @@ human::human()				// default constructor
 {
 	// Assign Alice and Bob a public key/private key key pair
 	keypair = RSA_generate_key(2048,3,NULL,NULL);
+	memset(plain,0,ILIM); //zero buffers
+	memset(cipher,0,OLIM);
 }
 
 unsigned int human::choosePaint()	// assign random 9 digit int
@@ -161,6 +164,13 @@ unsigned int findRoot(unsigned int prime)
 		}
 	}
 
+}
+
+void human::printcipher(int len){
+	int lim = len*KSIZE;
+	for(int i=0;i<lim;i++){
+		printf("|%03u|",cipher[i]);
+	}
 }
 
 int main(int argc, char *argv[]){
@@ -319,13 +329,52 @@ int main(int argc, char *argv[]){
 	Bob.ping.p_HMAC = Alice.ping.HMAC;
 	cout << "			Ping #3 is received by Bob" << endl;
 
+	// Have Alice use hash function to create secret key
+	string hashkey = doSHA1(Alice.sharedPaint);
 
-	if(Bob.sharedPaint == Alice.sharedPaint)
-	{
-		return int(Bob.sharedPaint);
-	}
-	else
-	{
-		return -1;
-	}
+	//Alice will store this hashed key
+	Alice.chat.create_key((unsigned char *)hashkey.c_str());
+
+	//Have Bob use hash function to create secret key
+	string hashkey2 = doSHA1(Bob.sharedPaint);
+
+	//Bob will store this hashed key
+	Bob.chat.create_key((unsigned char *)hashkey2.c_str());
+	cout << "Alice's AES Key generated from SS:" << endl;
+	Alice.chat.printkey();
+	cout << "Bob's AES Key generated from SS:" << endl;
+	Bob.chat.printkey();
+
+	//Have Alice send Bob first of 2 messages
+	strcpy((char *)Alice.plain,"Hello Bob, how are you?");
+	int m1len = Alice.chat.encrypt(Alice.plain,
+	Bob.cipher);
+	//Bob.printcipher(ILIM);
+	//Have Bob decrypt the first of 2 messages
+	int end1 = Bob.chat.decrypt(Bob.plain,Bob.cipher,m1len);
+	//cout << "Bob's encrypted messages received from Alice:" << endl;
+	//Bob.printcipher(m1len*KSIZE); //print the cipher if you want to
+	cout <<"Alice's first sent message to Bob:" << endl;
+	cout << Alice.plain << endl;
+	cout <<"Bob's first received message from Alice (Decrypted):" << endl;
+	cout << Bob.plain << endl;
+
+	cout << endl;
+	//Have Bob send Alice second of 2 messages
+	memset(Bob.plain,0,ILIM); //zero Bob's plaintext
+	memset(Bob.cipher,0,OLIM); //zero Bob's ciphertext
+	memset(Alice.cipher,0,OLIM); //zero Alice's ciphertext
+	strcpy((char *)Bob.plain,"I'm doing well Alice, have a good night.");
+	int m2len = Bob.chat.encrypt(Bob.plain,
+	Alice.cipher);
+
+	//Have Alice decrypt the second of 2 messages
+	memset(Alice.plain,0,ILIM); //zero Bob's plaintext
+	int end2 = Alice.chat.decrypt(Alice.plain,Alice.cipher,m2len);
+	//cout << "Bob's encrypted messages received from Alice:" << endl;
+	//Bob.printcipher(m1len*KSIZE); //print the cipher if you want to
+	cout <<"Bob's second sent message to Alice:" << endl;
+	cout << Bob.plain << endl;
+	cout <<"Alice's second received message from Bob (Decrypted):" << endl;
+	cout << Alice.plain << endl;
 }

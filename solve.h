@@ -9,6 +9,8 @@
 #include <iostream>
 #include <openssl/rsa.h>
 #include <cstring>
+#include "messaging.h"
+
 using namespace std;
 
 class human
@@ -27,6 +29,8 @@ class human
 		unsigned int k_partner;
 		RSA *keypair;
 
+		void printcipher(int);
+
 		struct send 
 		{
 			char *encr_K;	// ping 1, ping 2
@@ -37,7 +41,10 @@ class human
 		};
 
 		send ping;
+		Messaging chat;
 
+		unsigned char plain[ILIM]; //plaintext container
+		unsigned char cipher[OLIM]; //ciphertext container
 };
 
 #endif

@@ -19,16 +19,17 @@ class Messaging { //class for sending messages
 	void copy(unsigned char[],unsigned char[],int);
 	void xorb(unsigned char[],unsigned char[]);
 	int generate_key();
-	void create_key(unsigned int);
+	void create_key(unsigned char[]);
 	void revuchararr(unsigned char[]);
 	void num2uchararray(uint128,unsigned char[]);
 	uint128 uchararray2num(unsigned char[16]);
+	void printkey();
 	int encrypt(unsigned char[],unsigned char[]);
 	int decrypt(unsigned char[],unsigned char[],
 	long unsigned int);
 	~Messaging(); // default deconstructor
 
-	private:
+	//private:
 
 	uint128 count; //running count for chat session
 	unsigned char key[KSIZE]; //holds the secret key
