@@ -4,16 +4,13 @@
 #ifndef MESSAGING_H
 #define MESSAGING_H
 
-#define BLOCK 128
-#define KSIZE 16
-#define CSIZE 8
-#define ILIM 256
-#define OLIM 4096
+#define BLOCK 128 //number of bytes in a block
+#define KSIZE 16 //key size
+#define CSIZE 16 //size of nonce and counter
+#define ILIM 256 //holds the message
+#define OLIM 4096 //holds the encrypted data
 
-struct enc_info{
-	int len;
-	unsigned int start; 
-};
+typedef __uint128_t uint128; //for the counter
 
 class Messaging { //class for sending messages
 	public:
@@ -24,17 +21,17 @@ class Messaging { //class for sending messages
 	int generate_key();
 	void create_key(unsigned int);
 	void revuchararr(unsigned char[]);
-	void num2uchararray(long unsigned int,unsigned char[]);
-	struct enc_info encrypt(unsigned char[],unsigned char[]);
+	void num2uchararray(uint128,unsigned char[]);
+	uint128 uchararray2num(unsigned char[16]);
+	int encrypt(unsigned char[],unsigned char[]);
 	int decrypt(unsigned char[],unsigned char[],
-	long unsigned int,long unsigned int);
+	long unsigned int);
 	~Messaging(); // default deconstructor
 
 	private:
-	unsigned long int count;
-	unsigned char nonce[CSIZE];
-	unsigned char key[KSIZE];
 
+	uint128 count;
+	unsigned char key[KSIZE];
 };
 
 #endif

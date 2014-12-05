@@ -26,10 +26,10 @@ int main(void){
 	A.create_key(commonkey);
 	B.create_key(commonkey);
 
-	strncpy((char *)plain,"Stronger than Hi? I think not ;)",ILIM-1);
+	strncpy((char *)plain,"You got this Sonic!!!",ILIM-1);
 	printf("%s\n",plain);
-	struct enc_info e = A.encrypt(plain,cipher);
-	int j = e.len * KSIZE;
+	int len = A.encrypt(plain,cipher);
+	int j = len * KSIZE;
 
 	//for(int i=0;i<j;i++){
 	//	printf("|%03u|",cipher[i]);
@@ -37,7 +37,7 @@ int main(void){
 
 //	printf("\n");
 	memset(plain,0,ILIM);
-	int end = B.decrypt(plain,cipher,e.start,e.len);
+	int end = B.decrypt(plain,cipher,len);
 	printf("%s\n",plain);
 	return 0;
 }

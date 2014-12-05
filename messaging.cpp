@@ -11,21 +11,18 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 #include <openssl/aes.h>
 #include <iostream>
 #include "messaging.h"
 
-using namespace std;
+//using namespace std;
 
 Messaging::Messaging(){
 	count = 0; //init count
 	memset(key,0,KSIZE); //zero key
-	memset(nonce,0,CSIZE); //zero nonce
-	for(int i=0;i<CSIZE;i++){
-		nonce[i] = 255u-i; //initialize nonce
-	}
 }
 
 void Messaging::copy(unsigned char a[], unsigned char b[], int size){  //b values into a
@@ -49,9 +46,7 @@ int Messaging::generate_key(){
 	if ((read(fd, key, KSIZE)) == -1){
 		perror ("read key error");
 	}
-	if ((read (fd, nonce, CSIZE)) == -1){
-		perror ("read iv error");
-	}
+
 	close (fd);
 	return 0;
 }
@@ -63,10 +58,11 @@ void Messaging::create_key(unsigned int keyval){
 		}
 }
 
-void Messaging::revuchararr(unsigned char a[8]){
+//reverses an array of unsigned char values
+void Messaging::revuchararr(unsigned char a[16]){
 	if(a != NULL){
 		int low = 0;
-		int high = 7;
+		int high = 15;
 		while(low < high){
 			unsigned char temp = a[low];
 			a[low] = a[high];
@@ -77,10 +73,11 @@ void Messaging::revuchararr(unsigned char a[8]){
 	}
 }
 
-void Messaging::num2uchararray(long unsigned int v, unsigned char a[8]){
-	int x = v;
+//turn a long unsinged into an 8 byte char array
+void Messaging::num2uchararray(uint128 v, unsigned char a[16]){
+	uint128 x = v;
 	int it = 0;
-	while(x>0 && it<8){
+	while(x>0 && it<16){
 		int temp = x%256;
 		a[it] = temp;
 		x /= 256;
@@ -89,20 +86,31 @@ void Messaging::num2uchararray(long unsigned int v, unsigned char a[8]){
 	revuchararr(a);
 }
 
-//may take a key later
-struct enc_info Messaging::encrypt(unsigned char in[], unsigned char out[]){
-	struct enc_info retval;
-	retval.start = count; //decryption knows where to start now
+uint128 Messaging::uchararray2num(unsigned char a[16]){
+	uint128 ans = 0; //set up answer
+	uint128 base = 256; //unsigned char is 8 bytes so use base 256
+	int i;
+	for(i=0;i<16;i++){
+		uint128 adjbase = 1; //adjusted base for iteration
+		int j;
+		for(j=0;j<16-i-1;j++){
+			adjbase *= base; //scale adjbase up to 256^(i-1)
+		}
+		ans += adjbase * a[i]; //update answer based on a[i]'s value
+	}
+	return ans;
+}
 
+//encrypt message and send back message length and counter start value
+int Messaging::encrypt(unsigned char in[], unsigned char out[]){
 	unsigned char counter[CSIZE]; //holds the counter in byte form
-	unsigned char buff[KSIZE]; //buffer that holds nonce and counter
+	unsigned char buff[KSIZE]; //buffer that holds a counter
 
 	memset(counter,0,CSIZE); //zero counter
 	memset(buff,0,KSIZE); //zero counter
-	bcopy(nonce,buff,CSIZE); //put nonce in first half of buff
 	num2uchararray(count,counter); //convert c into byte array
-	bcopy(counter,(buff+CSIZE),CSIZE); //put counter in second half of buff
-
+	bcopy(counter,buff,CSIZE); //put counter in buff
+	copy(buff,(out+CSIZE*(ILIM-1)),CSIZE); //put counter in back of out
 	AES_KEY AESkey;
 	AES_set_encrypt_key((const unsigned char *)key,BLOCK, &AESkey);
 
@@ -123,25 +131,26 @@ struct enc_info Messaging::encrypt(unsigned char in[], unsigned char out[]){
 		memset(counter,0,CSIZE); //zero counter
 		count++; //increment c to get new buff value
 		num2uchararray(count,counter); //convert c into byte array
-		bcopy(counter,(buff+CSIZE),CSIZE); //put counter in second half of buff
+		bcopy(counter,buff,CSIZE); //put counter in second half of buff
 		r++; //increment r
 	}
-	retval.len = r;
-	return retval; //the encryption info
+
+	return r; //the message length
 }
 
 int Messaging::decrypt(unsigned char in[], unsigned char out[],
-	long unsigned int start, long unsigned int len)
+	long unsigned int len)
 {
 	unsigned char counter[CSIZE]; //holds the counter in byte form
-	unsigned char buff[KSIZE]; //buffer that holds nonce and counter
-	long unsigned int c = start; //raw count to be iterated
+	unsigned char buff[KSIZE]; //buffer that holds a counter
+	uint128 c; //raw count to be iterated
 
 	memset(counter,0,CSIZE); //zero counter
-	memset(buff,0,KSIZE); //zero counter
-	bcopy(nonce,buff,CSIZE); //put nonce in first half of buff
-	num2uchararray(c,counter); //convert c into byte array
-	bcopy(counter,(buff+CSIZE),CSIZE); //put counter in second half of buff
+	memset(buff,0,KSIZE); //zero buff
+
+	copy(counter,(out+CSIZE*(ILIM-1)),CSIZE); //put initial count in counter
+	c = uchararray2num(counter); //convert counter into a uint128
+	bcopy(counter,buff,CSIZE); //put counter in second half of buff
 
 	AES_KEY AESkey;
 	AES_set_encrypt_key((const unsigned char *)key,BLOCK, &AESkey);
@@ -163,7 +172,7 @@ int Messaging::decrypt(unsigned char in[], unsigned char out[],
 		memset(counter,0,CSIZE); //zero counter
 		c++; //increment c to get new buff value
 		num2uchararray(c,counter); //convert c into byte array
-		bcopy(counter,(buff+CSIZE),CSIZE); //put counter in second half of buff
+		bcopy(counter,buff,CSIZE); //put counter in second half of buff
 		r++; //increment r
 	}
 
@@ -175,9 +184,3 @@ int Messaging::decrypt(unsigned char in[], unsigned char out[],
 Messaging::~Messaging(){
 
 }
-/*
-int _dmain(int argc, char *argv[]){
-
-	return 0;
-}
-*/
