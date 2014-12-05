@@ -7,6 +7,8 @@
 // note preprocessing directive wrapper above
 
 #include <iostream>
+#include <openssl/rsa.h>
+#include <cstring>
 using namespace std;
 
 class human
@@ -16,9 +18,26 @@ class human
 		unsigned int choosePaint();
 	
 		unsigned int chosenPaint;
-		unsigned int partnersPaint;
-		unsigned int startingPaint;
+		//unsigned int partnersPaint;	// sent over as g_val
 		unsigned int sharedPaint;
+		//unsigned int startingPaint;	// provided by the program
+		unsigned long int g_val_sent;
+
+		unsigned int k;	// k is a random string used for authentication
+		unsigned int k_partner;
+		RSA *keypair;
+
+		struct send 
+		{
+			char *encr_K;	// ping 1, ping 2
+			string name;	// ping 1, ping 2
+			unsigned long int g_val;	// ping 1, ping 2
+			string HMAC;	// ping 2, ping 3
+			string p_HMAC;	// ping 2, ping 3	
+		};
+
+		send ping;
+
 };
 
 #endif
