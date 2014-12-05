@@ -35,7 +35,7 @@ int main(void){
 	//	printf("|%03u|",cipher[i]);
 	//}
 
-//	printf("\n");
+	//printf("\n");
 	memset(plain,0,ILIM);
 	int end = B.decrypt(plain,cipher,len);
 	printf("%s\n",plain);

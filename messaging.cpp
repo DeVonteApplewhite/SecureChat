@@ -1,6 +1,7 @@
 /*
+	messaging.cpp implements interface defined in messaging.h
 	DeVonte' Applewhite
-	09/30/14 CSE40622
+	12/05/14 CSE40622
 	references used:
 	http://tldp.org/LDP/LG/issue87/vinayak.html
 */
@@ -18,39 +19,43 @@
 #include <iostream>
 #include "messaging.h"
 
-//using namespace std;
+using namespace std;
 
-Messaging::Messaging(){
+Messaging::Messaging(){ //constructor
 	count = 0; //init count
 	memset(key,0,KSIZE); //zero key
 }
 
-void Messaging::copy(unsigned char a[], unsigned char b[], int size){  //b values into a
+//copy b into a
+void Messaging::copy(unsigned char a[], unsigned char b[], int size){
 	for(int i=0;i<size;i++){
 		a[i] = b[i]; //copy over
 	}
 }
 
+//xor bytes of c with m
 void Messaging::xorb(unsigned char m[], unsigned char c[]){
 	for(int i=0;i<KSIZE;i++){
 		m[i] = m[i] xor c[i]; //xor each element and apply to m
 	}
 }
 
+//generate random key
 int Messaging::generate_key(){
 	int fd;
 
-	if ((fd = open("/dev/random", O_RDONLY)) == -1){
+	if ((fd = open("/dev/random", O_RDONLY)) == -1){ //open /dev/random
 		perror ("open error");
 	}
-	if ((read(fd, key, KSIZE)) == -1){
+	if ((read(fd, key, KSIZE)) == -1){ //read KSIZE bytes from /dev/random
 		perror ("read key error");
 	}
 
-	close (fd);
+	close (fd); //close file
 	return 0;
 }
 
+//create key using seed value
 void Messaging::create_key(unsigned int keyval){
 		srand(keyval); //seed randomizer with common start
 		for(int i=0;i<KSIZE;i++){
@@ -73,7 +78,7 @@ void Messaging::revuchararr(unsigned char a[16]){
 	}
 }
 
-//turn a long unsinged into an 8 byte char array
+//turn a uint128 into an 8 byte char array
 void Messaging::num2uchararray(uint128 v, unsigned char a[16]){
 	uint128 x = v;
 	int it = 0;
@@ -86,6 +91,7 @@ void Messaging::num2uchararray(uint128 v, unsigned char a[16]){
 	revuchararr(a);
 }
 
+//turn an 8 byte char array into a uint128
 uint128 Messaging::uchararray2num(unsigned char a[16]){
 	uint128 ans = 0; //set up answer
 	uint128 base = 256; //unsigned char is 8 bytes so use base 256
@@ -115,8 +121,8 @@ int Messaging::encrypt(unsigned char in[], unsigned char out[]){
 	AES_set_encrypt_key((const unsigned char *)key,BLOCK, &AESkey);
 
 	int r;
-	unsigned char block[KSIZE];
-	unsigned char oblock[KSIZE];
+	unsigned char block[KSIZE]; //intermediate buffer to be encrypted
+	unsigned char oblock[KSIZE]; //result of encryption
 
 	r = 0;
 	while(in[r] != 0 && r<ILIM-1){ //more letters to read
@@ -138,6 +144,7 @@ int Messaging::encrypt(unsigned char in[], unsigned char out[]){
 	return r; //the message length
 }
 
+//decrypt message, put result in in[], and return length
 int Messaging::decrypt(unsigned char in[], unsigned char out[],
 	long unsigned int len)
 {
@@ -181,6 +188,6 @@ int Messaging::decrypt(unsigned char in[], unsigned char out[],
 	return r; //the size of the message
 }
 
-Messaging::~Messaging(){
+Messaging::~Messaging(){ //destructor (not used)
 
 }

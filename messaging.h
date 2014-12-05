@@ -30,8 +30,8 @@ class Messaging { //class for sending messages
 
 	private:
 
-	uint128 count;
-	unsigned char key[KSIZE];
+	uint128 count; //running count for chat session
+	unsigned char key[KSIZE]; //holds the secret key
 };
 
 #endif
