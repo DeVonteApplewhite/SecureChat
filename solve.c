@@ -5,25 +5,26 @@ unsigned long int power(unsigned long a,unsigned long n,unsigned long m){
 	unsigned long e = n;
 	unsigned long y = 1;
 	unsigned long z = a;
-	printf("$e = %lu$,",e);
-	printf("$y = %lu$,",y);
-	printf("$z = %lu$\\\\\n",z);
+	//printf("$e = %lu$,",e);
+	//printf("$y = %lu$,",y);
+	//printf("$z = %lu$\\\\\n",z);
 
 	while(1){
 		if(e%2 == 1){ //e is odd
-			printf("$y = (%lu \\cdot %lu)\\%%%lu = ",y,z,m);
+			//printf("$y = (%lu \\cdot %lu)\\%%%lu = ",y,z,m);
 			y = (y*z)%m;
-			printf("%lu$,",y);
+			//printf("%lu$,",y);
 		}
 		if(e<=1){
 			return y; //answer
 		}
-		printf("$z = (%lu \\cdot %lu)\\%%%lu = ",z,z,m);
+		//printf("$z = (%lu \\cdot %lu)\\%%%lu = ",z,z,m);
 		z = (z*z) % m;
-		printf("%lu$,",z);
-		printf("$e = %lu \\gg 1 = ",e);
+		//printf("%lu$,",z);
+		//printf("$e = %lu \\gg 1 = ",e);
 		e = e >> 1;
-		printf("%lu$\\\\\n",e);
+		//
+		//printf("%lu$\\\\\n",e);
 		//printf("\\noindent\\makebox[\\linewidth]{\\rule{\\paperwidth}{0.4pt}}\n");
 	}
 	return 0;
