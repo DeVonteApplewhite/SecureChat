@@ -359,12 +359,13 @@ int main(int argc, char *argv[]){
 	cout <<"Bob's first received message from Alice (Decrypted):" << endl;
 	cout << Bob.plain << endl;
 
+
 	cout << endl;
 	//Have Bob send Alice second of 2 messages
 	memset(Bob.plain,0,ILIM); //zero Bob's plaintext
 	memset(Bob.cipher,0,OLIM); //zero Bob's ciphertext
 	memset(Alice.cipher,0,OLIM); //zero Alice's ciphertext
-	strcpy((char *)Bob.plain,"I'm doing well Alice, have a good night.");
+	strcpy((char *)Bob.plain,"I'm doing well Alice, how are you?");
 	int m2len = Bob.chat.encrypt(Bob.plain,
 	Alice.cipher);
 
@@ -377,4 +378,25 @@ int main(int argc, char *argv[]){
 	cout << Bob.plain << endl;
 	cout <<"Alice's second received message from Bob (Decrypted):" << endl;
 	cout << Alice.plain << endl;
+
+
+	cout << endl;
+	//Have Alice send Bob second of 2 messages
+	memset(Alice.plain,0,ILIM); //zero Bob's plaintext
+	memset(Alice.cipher,0,OLIM); //zero Bob's ciphertext
+	memset(Bob.cipher,0,OLIM); //zero Alice's ciphertext
+	strcpy((char *)Alice.plain,"I'm doing well Bob, have a good night.");
+	int m3len = Alice.chat.encrypt(Alice.plain,
+	Bob.cipher);
+
+	//Have Bob decrypt the second of 2 messages
+	memset(Bob.plain,0,ILIM); //zero Bob's plaintext
+	int end3 = Bob.chat.decrypt(Bob.plain,Bob.cipher,m3len);
+	//cout << "Bob's encrypted messages received from Alice:" << endl;
+	//Bob.printcipher(m1len*KSIZE); //print the cipher if you want to
+	cout <<"Alice's third sent message to Bob:" << endl;
+	cout << Alice.plain << endl;
+	cout <<"Bob's third received message from Alice (Decrypted):" << endl;
+	cout << Bob.plain << endl;
+
 }

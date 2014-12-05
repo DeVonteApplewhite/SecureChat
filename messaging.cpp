@@ -122,7 +122,7 @@ int Messaging::encrypt(unsigned char in[], unsigned char out[]){
 	memset(buff,0,KSIZE); //zero counter
 	num2uchararray(count,counter); //convert c into byte array
 	bcopy(counter,buff,CSIZE); //put counter in buff
-	copy(buff,(out+CSIZE*(ILIM-1)),CSIZE); //put counter in back of out
+	copy((out+CSIZE*(ILIM-1)),buff,CSIZE); //put counter in back of out
 	AES_KEY AESkey;
 	AES_set_encrypt_key((const unsigned char *)key,BLOCK, &AESkey);
 

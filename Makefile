@@ -1,10 +1,13 @@
-all: messaging
+all:	main
 
-messaging: messaging.o main.o
-	g++ -I/usr/bin/ -Wall -lcrypto messaging.o main.o -o messaging
+main: solve.o messaging.o
+	g++ -I/usr/bin/ -lcrypto solve.o messaging.o -o main
+
+solve.o: solve.cpp messaging.cpp
+	g++ -I/usr/bin/ -lcrypto -c solve.cpp messaging.cpp
+
 messaging.o: messaging.cpp
 	g++ -I/usr/bin/ -Wall -lcrypto -c messaging.cpp
-main.o: main.cpp
-	g++ -c main.cpp
+
 clean:
-	rm -f messaging *.o
+	rm -f *.o main
